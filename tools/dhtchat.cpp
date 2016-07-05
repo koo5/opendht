@@ -57,7 +57,7 @@ main(int argc, char **argv)
 
     if (not params.bootstrap.first.empty())
         dht.bootstrap(params.bootstrap.first.c_str(), params.bootstrap.second.c_str());
-
+	std::cout << "bbb" << params.bootstrap.first << ":" << params.bootstrap.second <<std::endl;
     print_node_info(dht, params);
     std::cout << "  type 'c {hash}' to join a channel" << std::endl << std::endl;
 

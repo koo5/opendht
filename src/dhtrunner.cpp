@@ -253,10 +253,12 @@ DhtRunner::doRun(const sockaddr_in* sin4, const sockaddr_in6* sin6, SecureDht::C
                     FD_SET(s4, &readfds);
                 if(s6 >= 0)
                     FD_SET(s6, &readfds);
-
                 int rc = select(s4 > s6 ? s4 + 1 : s6 + 1, &readfds, nullptr, nullptr, &tv);
+        //        std::cout << "select:"<< rc << std::endl;
+
                 if(rc < 0) {
                     if(errno != EINTR) {
+                        std::cout << "wat" << std::endl;
                         perror("select");
                         std::this_thread::sleep_for( std::chrono::seconds(1) );
                     }
@@ -268,13 +270,27 @@ DhtRunner::doRun(const sockaddr_in* sin4, const sockaddr_in6* sin6, SecureDht::C
                 if(rc > 0) {
                     fromlen = sizeof(from);
                     if(s4 >= 0 && FD_ISSET(s4, &readfds))
+                    {
                         rc = recvfrom(s4, (char*)buf.data(), buf.size(), 0, (struct sockaddr*)&from, &fromlen);
+//                        std::cout << "4rc:" << rc << std::endl;
+
+                    }
                     else if(s6 >= 0 && FD_ISSET(s6, &readfds))
+                    {
                         rc = recvfrom(s6, (char*)buf.data(), buf.size(), 0, (struct sockaddr*)&from, &fromlen);
+//                        std::cout << "6rc:" << rc << std::endl;
+
+                    }
                     else
+                    
                         break;
+                    
                     if (rc > 0) {
                         {
+//                        	for(size_t i = 0; i < rc; i++)
+//                        		std::cout << buf[i];
+//                            std::cout << std::endl;
+
                             std::lock_guard<std::mutex> lck(sock_mtx);
                             rcv.emplace_back(Blob {buf.begin(), buf.begin()+rc+1}, std::make_pair(from, fromlen));
                         }

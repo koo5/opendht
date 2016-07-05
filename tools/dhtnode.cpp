@@ -137,9 +137,11 @@ void cmd_loop(DhtRunner& dht, dht_params& params)
         } else if (op == "log") {
             params.log = !params.log;
             if (params.log)
+           
                 enableLogging(dht);
             else
                 disableLogging(dht);
+            std::cout << "logging:" << params.log << std::endl;
             continue;
         }
 
@@ -257,14 +259,13 @@ main(int argc, char **argv)
             crt = dht::crypto::generateIdentity("DHT Node", ca_tmp);
         }
 
+
+//                enableLogging(dht);
+
         dht.run(params.port, crt, true, params.is_bootstrap_node);
 
-        if (params.log) {
-            if (not params.logfile.empty())
-                enableFileLogging(dht, params.logfile);
-            else
+
                 enableLogging(dht);
-        }
 
         if (not params.bootstrap.first.empty()) {
             //std::cout << "Bootstrap: " << params.bootstrap.first << ":" << params.bootstrap.second << std::endl;

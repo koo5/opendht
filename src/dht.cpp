@@ -221,6 +221,7 @@ bool
 Dht::isMartian(const sockaddr *sa, socklen_t len)
 {
     // Check that sa_family can be accessed safely
+//    std::cout << "sa:" << sa << " len:" << len  << " sizeof(sockaddr_in):" << sizeof(sockaddr_in) << std::endl;
     if (!sa || len < sizeof(sockaddr_in))
         return true;
 
@@ -230,7 +231,7 @@ Dht::isMartian(const sockaddr *sa, socklen_t len)
         const uint8_t *address = (const uint8_t*)&sin->sin_addr;
         return sin->sin_port == 0 ||
             (address[0] == 0) ||
-            (address[0] == 127) ||
+//            (address[0] == 127) ||
             ((address[0] & 0xE0) == 0xE0);
     }
     case AF_INET6: {
@@ -657,8 +658,12 @@ Dht::reportedAddr(const sockaddr *sa, socklen_t sa_len)
 std::shared_ptr<Node>
 Dht::newNode(const InfoHash& id, const sockaddr *sa, socklen_t salen, int confirm, const sockaddr* addr, socklen_t addr_length)
 {
+
+//	std::cout << "newNode" << std::endl;
+
     if (id == myid || isMartian(sa, salen) || isNodeBlacklisted(sa, salen))
         return nullptr;
+//	std::cout << "newNode.." << std::endl;
 
     auto& list = sa->sa_family == AF_INET ? buckets : buckets6;
     auto b = list.findBucket(id);
@@ -797,7 +802,7 @@ Dht::Search::removeExpiredNode(time_point now)
         e = std::prev(e);
         const Node& n = *e->node;
         if (n.isExpired(now) and n.time + Node::NODE_EXPIRE_TIME < now) {
-            //std::cout << "Removing expired node " << n.id << " from IPv" << (af==AF_INET?'4':'6') << " search " << id << std::endl;
+            std::cout << "Removing expired node " << n.id << " from IPv" << (af==AF_INET?'4':'6') << " search " << id << std::endl;
             nodes.erase(e);
             return true;
         }
@@ -812,7 +817,7 @@ bool
 Dht::Search::insertNode(std::shared_ptr<Node> node, time_point now, const Blob& token)
 {
     if (node->ss.ss_family != af) {
-        //DHT_DEBUG("Attempted to insert node in the wrong family.");
+        std::cout << "Attempted to insert node in the wrong family." << std::endl;
         return false;
     }
 
@@ -855,7 +860,7 @@ Dht::Search::insertNode(std::shared_ptr<Node> node, time_point now, const Blob& 
         new_search_node = true;
         /*if (synced) {
             n->candidate = true;
-            //std::cout << "Adding candidate node " << node->id << " to IPv" << (af==AF_INET?'4':'6') << " synced search " << id << std::endl;
+            std::cout << "Adding candidate node " << node->id << " to IPv" << (af==AF_INET?'4':'6') << " synced search " << id << std::endl;
         }*//* else {
             std::cout << "Adding real node " << node->id << " to IPv" << (af==AF_INET?'4':'6') << " synced search " << id << std::endl;
         }*/
@@ -974,7 +979,7 @@ Dht::searchStep(Search& sr)
                         sr.id.toString().c_str(), sr.af == AF_INET ? '4' : '6',
                         n.node->id.toString().c_str(),
                         print_addr(n.node->ss, n.node->sslen).c_str());
-                    //std::cout << "Sending listen to " << n.node->id << " " << print_addr(n.node->ss, n.node->sslen) << std::endl;
+                    std::cout << "Sending listen to " << n.node->id << " " << print_addr(n.node->ss, n.node->sslen) << std::endl;
 
                     sendListen((sockaddr*)&n.node->ss, n.node->sslen, TransId {TransPrefix::LISTEN, sr.tid}, sr.id, n.token, n.node->reply_time >= now - UDP_REPLY_TIME);
                     n.pending = true;
@@ -1007,7 +1012,7 @@ Dht::searchStep(Search& sr)
                         sr.id.toString().c_str(), sr.af == AF_INET ? '4' : '6',
                         n.node->id.toString().c_str(),
                         print_addr(n.node->ss, n.node->sslen).c_str());
-                    //std::cout << "Sending announce_value to " << n.node->id << " " << print_addr(n.node->ss, n.node->sslen) << std::endl;
+                    std::cout << "Sending announce_value to " << n.node->id << " " << print_addr(n.node->ss, n.node->sslen) << std::endl;
 
                     sendAnnounceValue((sockaddr*)&n.node->ss, n.node->sslen,
                             TransId {TransPrefix::ANNOUNCE_VALUES, sr.tid},
@@ -1293,7 +1298,7 @@ Dht::Search::getNextStepTime(const std::map<ValueType::Id, ValueType>& types, ti
 
     auto ut = getUpdateTime(now);
     if (ut != time_point::max()) {
-        //std::cout << id.toString() << " IPv" << (af==AF_INET?"4":"6") << " update time in " << print_dt(ut - now) << " s" << std::endl;
+//        std::cout << id.toString() << " IPv" << (af==AF_INET?"4":"6") << " update time in " << print_dt(ut - now) << " s" << std::endl;
         next_step = std::min(next_step, ut);
     }
 
@@ -1301,13 +1306,13 @@ Dht::Search::getNextStepTime(const std::map<ValueType::Id, ValueType>& types, ti
     {
         auto at = getAnnounceTime(types, now);
         if (at != time_point::max()) {
-            //std::cout << id.toString() << " IPv" << (af==AF_INET?"4":"6") << " announce time in " << print_dt(at - now) << " s" << std::endl;
+  //          std::cout << id.toString() << " IPv" << (af==AF_INET?"4":"6") << " announce time in " << print_dt(at - now) << " s" << std::endl;
             next_step = std::min(next_step, at);
         }
 
         auto lt = getListenTime(now);
         if (lt != time_point::max()) {
-            //std::cout << id.toString() << " IPv" << (af==AF_INET?"4":"6") << " listen time in " << print_dt(lt - now) << " s" << std::endl;
+//            std::cout << id.toString() << " IPv" << (af==AF_INET?"4":"6") << " listen time in " << print_dt(lt - now) << " s" << std::endl;
             next_step = std::min(next_step, lt);
         }
     }
@@ -1792,14 +1797,14 @@ Dht::Storage::store(const std::shared_ptr<Value>& value, time_point created, ssi
         it->time = created;
         ssize_t size_diff = value->size() - it->data->size();
         if (size_diff <= size_left and it->data != value) {
-            //DHT_DEBUG("Updating %s -> %s", id.toString().c_str(), value->toString().c_str());
+//            std::cout << "Updating " << std::endl;
             it->data = value;
             total_size += size_diff;
             return std::make_tuple(&(*it), size_diff, 0);
         }
         return std::make_tuple(nullptr, 0, 0);
     } else {
-        //DHT_DEBUG("Storing %s -> %s", id.toString().c_str(), value->toString().c_str());
+//        std::cout <<"Storing " << std::endl;
         ssize_t size = value->size();
         if (size <= size_left and values.size() < MAX_VALUES) {
             total_size += size;
@@ -2225,7 +2230,7 @@ Dht::rateLimit()
 bool
 Dht::neighbourhoodMaintenance(RoutingTable& list)
 {
-    //DHT_DEBUG("neighbourhoodMaintenance");
+    DHT_DEBUG("neighbourhoodMaintenance");
     auto b = list.findBucket(myid);
     if (b == list.end())
         return false;
@@ -2365,18 +2370,28 @@ Dht::maintainStorage(InfoHash id, bool force, DoneCallback donecb) {
 void
 Dht::processMessage(const uint8_t *buf, size_t buflen, const sockaddr *from, socklen_t fromlen)
 {
+    
+//    std::cout << "processMessage" << buflen << std::endl;
     if (buflen == 0)
         return;
 
     if (isMartian(from, fromlen))
-        return;
+    {
+        std::cout <<"martians" << std::endl;
 
+        return;
+}
     if (isNodeBlacklisted(from, fromlen)) {
+            std::cout <<"blacklisted" << std::endl;
+
         DHT_DEBUG("Received packet from blacklisted node.");
         return;
     }
 
-    //DHT_DEBUG("processMessage %p %lu %p %lu", buf, buflen, from, fromlen);
+
+//    std::cout <<"ppp" << std::endl;
+
+    DHT_DEBUG("processMessage %p %lu %p %lu", buf, buflen, from, fromlen);
 
     ParsedMessage msg;
     try {
@@ -2403,7 +2418,7 @@ Dht::processMessage(const uint8_t *buf, size_t buflen, const sockaddr *from, soc
         }
     }
 
-    //std::cout << "Message from " << id << " IPv" << (from->sa_family==AF_INET?'4':'6') << std::endl;
+//    std::cout << "Message from "  << " IPv" << (from->sa_family==AF_INET?'4':'6') << std::endl;
     uint16_t ttid = 0;
 
     switch (msg.type) {
@@ -2499,7 +2514,7 @@ Dht::processMessage(const uint8_t *buf, size_t buflen, const sockaddr *from, soc
                    DHT_DEBUG("[search %s IPv%c] found nodes: %u IPv4, %u IPv6",
                        sr->id.toString().c_str(), sr->af == AF_INET ? '4' : '6',
                        msg.nodes4.size()/26, msg.nodes6.size()/38);
-                    //std::cout << "Received reply from " << id << ", sending new message..." << std::endl;
+      //              std::cout << "Received reply from " << ", sending new message..." << std::endl;
                     if (searchSendGetValues(*sr))
                         sr->get_step_time = now;
                 }
@@ -2598,7 +2613,8 @@ Dht::processMessage(const uint8_t *buf, size_t buflen, const sockaddr *from, soc
     case MessageType::Ping:
         in_stats.ping++;
         newNode(msg.id, from, fromlen, 1);
-        //DHT_DEBUG("Sending pong.");
+//        std::cout << "pong." << std::endl;
+        DHT_DEBUG("Sending pong.");
         sendPong(from, fromlen, msg.tid);
         break;
     case MessageType::FindNode: {
@@ -3201,7 +3217,7 @@ Dht::sendClosestNodes(const sockaddr *sa, socklen_t salen, TransId tid,
                 numnodes6 = bufferClosestNodes(nodes6, numnodes6, id, *std::prev(b));
         }
     }
-    //DHT_DEBUG("sending closest nodes (%d+%d nodes.)", numnodes, numnodes6);
+    DHT_DEBUG("sending closest nodes (%d+%d nodes.)", numnodes, numnodes6);
 
     try {
         return sendNodesValues(sa, salen, tid,
